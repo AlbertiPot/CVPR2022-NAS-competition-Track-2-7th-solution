@@ -204,7 +204,6 @@ if __name__ == '__main__':
                 "veriwild_rank",
                 "sop_rank"]
     # task_list = ["cplfw_rank"]
-    import pdb;pdb.set_trace()
     with open('./data/CVPR_2022_NAS_Track2_test.json', 'r') as f:
         test_data = json.load(f)
     
