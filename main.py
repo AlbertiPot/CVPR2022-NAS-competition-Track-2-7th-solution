@@ -26,6 +26,7 @@ parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
 parser.add_argument('--log_interval', type=int, default=100)
 # parser.add_argument('--target_type', type=str, default='market1501_rank', help='8 target missions')
 parser.add_argument('--num_workers', type=int, default='4')
+parser.add_argument('--save_name', type=str, default='exp1')
 
 args = parser.parse_args()
 
@@ -60,7 +61,6 @@ def train_epoch(model, criterion, optimizer, train_loader, epoch, log_interval):
         archs, targets = archs.cuda(), targets.cuda()
         optimizer.zero_grad()
         
-        archs = archs.view(archs.size(0),-1)
         outputs = model(archs)
         outputs = outputs.squeeze(1)
 
@@ -88,7 +88,6 @@ def val_epoch(model, val_loader, epoch, log_interval):
     for step, (archs, targets) in enumerate(val_loader):
         
         archs, targets = archs.cuda(), targets.cuda()
-        archs = archs.view(archs.size(0),-1)
 
         outputs = model(archs)
         outputs = outputs.squeeze(1)
@@ -109,7 +108,6 @@ def test(model, test_loader):
     for step, archs in enumerate(test_loader):
 
         archs = archs.cuda()
-        archs = archs.view(archs.size(0),-1)
 
         outputs = model(archs)
         outputs = list(outputs.squeeze(1).detach().cpu().numpy())
@@ -170,7 +168,7 @@ def main(target_type):
         
         if epoch_ktau > best_ktau:
                 best_ktau = epoch_ktau
-                torch.save(model.state_dict(), './results/{}_best_katu_model_seed{}.pth'.format(target_type, args.seed))
+                torch.save(model.state_dict(), './results/{}_seed{}_{}.pth'.format(target_type, args.seed, args.save_name))
                 best_model_weights = copy.deepcopy(model.state_dict())
 
     print('Best train KTau: {:4f} on task {}'.format(best_ktau, target_type))
@@ -204,6 +202,7 @@ if __name__ == '__main__':
                 "veriwild_rank",
                 "sop_rank"]
     # task_list = ["cplfw_rank"]
+
     with open('./data/CVPR_2022_NAS_Track2_test.json', 'r') as f:
         test_data = json.load(f)
     
@@ -217,6 +216,6 @@ if __name__ == '__main__':
             test_data[key][data_type] = int(total_output[i])
         
     print('Ready to save results!')
-    with open('./CVPR_2022_NAS_Track2_submit_A_seed{}.json'.format(args.seed), 'w') as f:
+    with open('./train_Track2_submitA_seed{}_{}.json'.format(args.seed,args.save_name), 'w') as f:
         json.dump(test_data, f)
         

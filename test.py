@@ -15,9 +15,10 @@ parser = argparse.ArgumentParser(description='PyTorch Estimator Training')
 parser.add_argument('--data_path', type=str, default='./data/', help='dataset path')
 parser.add_argument('--train_ratio', type=float, default=0.9, help='ratio of train data')
 parser.add_argument('--batch_size', type=int, default=16)
-parser.add_argument('--seed', type=int, default=1, help='random seed')
+parser.add_argument('--seed', type=int, default=2, help='random seed')
 parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
 parser.add_argument('--num_workers', type=int, default='4')
+parser.add_argument('--save_name', type=str, default='exp1')
 
 args = parser.parse_args()
 
@@ -35,7 +36,6 @@ def val_epoch(model, val_loader, epoch=0):
     for step, (archs, targets) in enumerate(val_loader):
         
         archs, targets = archs.cuda(), targets.cuda()
-        archs = archs.view(archs.size(0),-1)
 
         outputs = model(archs)
         outputs = outputs.squeeze(1)
@@ -53,7 +53,6 @@ def test(model, test_loader):
     for step, archs in enumerate(test_loader):
 
         archs = archs.cuda()
-        archs = archs.view(archs.size(0),-1)
 
         outputs = model(archs)
         outputs = list(outputs.squeeze(1).detach().cpu().numpy())
@@ -88,7 +87,7 @@ def main(target_type):
                                 )
 
     model = Predictor().cuda()
-    model.load_state_dict(torch.load('./results/{}_best_katu_model_seed{}.pth'.format(target_type, args.seed)))
+    model.load_state_dict(torch.load('./results/{}_seed{}_{}.pth'.format(target_type, args.seed, args.save_name)))
 
     model.eval()
     val_epoch(model, val_loader)
@@ -132,7 +131,7 @@ if __name__ == '__main__':
             test_data[key][data_type] = int(total_output[i])
         
     print('Ready to save results!')
-    with open('./CVPR_2022_NAS_Track2_submit_A.json', 'w') as f:
+    with open('./eval_Track2_submitA_seed{}_{}.json'.format(args.seed,args.save_name), 'w') as f:
         json.dump(test_data, f)
 
 
