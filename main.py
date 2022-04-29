@@ -23,7 +23,7 @@ parser.add_argument('--num_epochs', type=int, default=400)
 parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--seed', type=int, default=1, help='random seed')
 parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
-parser.add_argument('--log_interval', type=int, default=100)
+parser.add_argument('--log_interval', type=int, default=50)
 # parser.add_argument('--target_type', type=str, default='market1501_rank', help='8 target missions')
 parser.add_argument('--num_workers', type=int, default='4')
 parser.add_argument('--save_name', type=str, default='exp1')
@@ -66,7 +66,7 @@ def train_epoch(model, criterion, optimizer, train_loader, epoch, log_interval):
 
         # outputs.shape=torch.Size([16]) targets.shape = torch.Size([16])
         # loss = criterion(outputs, targets)
-        loss = pair_loss(outputs, targets) 
+        loss = pair_loss(outputs, targets)
 
         loss.backward()
         optimizer.step()
@@ -148,7 +148,8 @@ def main(target_type):
                             batch_size=args.batch_size,
                             pin_memory=True,
                             shuffle=False,
-                            num_workers=args.num_workers
+                            num_workers=args.num_workers,
+                            drop_last=False
                             )
 
     model = Predictor().cuda()
@@ -186,7 +187,7 @@ def norm_list(scores):
     scores_ls_sort.sort()
     rank_number=[]
     for item in scores_ls:
-        rank=scores_ls_sort.index(item)+1
+        rank=scores_ls_sort.index(item)
         rank_number.append(rank)
     return rank_number
 

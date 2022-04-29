@@ -83,7 +83,8 @@ def main(target_type):
                                 batch_size=args.batch_size,
                                 pin_memory=True,
                                 shuffle=False,
-                                num_workers=args.num_workers
+                                num_workers=args.num_workers,
+                                drop_last=False
                                 )
 
     model = Predictor().cuda()
@@ -102,7 +103,7 @@ def norm_list(scores):
     scores_ls_sort.sort()
     rank_number=[]
     for item in scores_ls:
-        rank=scores_ls_sort.index(item)+1
+        rank=scores_ls_sort.index(item)
         rank_number.append(rank)
     return rank_number
 

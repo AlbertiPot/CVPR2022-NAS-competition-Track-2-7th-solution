@@ -33,17 +33,17 @@ class Predictor(nn.Module):
         self.fc1 = nn.Linear(input_c*h*w, 64)
         
         self.net = nn.Sequential(            
-            nn.Linear(64,48),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=dropout),
-            nn.Linear(48,32),
+            nn.Linear(64,32),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout),
             nn.Linear(32,16),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout),
+            nn.Linear(16,32),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout),
             )
-        self.fc2 = nn.Linear(16,1)
+        self.fc2 = nn.Linear(32,1)
 
     def forward(self, x):   # x =[bsz, c, h,w]
         out = self.pos(x)   # x =[bsz, c, d_hidden]
