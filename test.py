@@ -108,6 +108,7 @@ def norm_list(scores):
     return rank_number
 
 if __name__ == '__main__':
+    print(args)
     
     task_list = ["cplfw_rank", 
                 "market1501_rank", 

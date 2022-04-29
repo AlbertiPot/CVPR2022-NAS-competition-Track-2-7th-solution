@@ -26,9 +26,9 @@ class PositionalEncoding(nn.Module):
         x = x.squeeze(2)
         return x + self.pos_table[:, :x.size(1)].clone().detach()                                   # 将pos_table中存储的位置参数复制一份，与输入相加。detach方法将位置编码从当前计算图中剥离，因此将不会跟踪梯度
 
-class Predictor(nn.Module):
+class AutoEncoder(nn.Module):
     def __init__(self, input_c=25, h=1, w=3, dropout=0.5):
-        super(Predictor, self).__init__()
+        super(AutoEncoder, self).__init__()
         self.pos = PositionalEncoding(d_hid=h*w, n_position=30)
         self.fc1 = nn.Linear(input_c*h*w, 64)
         
@@ -44,6 +44,33 @@ class Predictor(nn.Module):
             nn.Dropout(p=dropout),
             )
         self.fc2 = nn.Linear(32,1)
+
+    def forward(self, x):   # x =[bsz, c, h,w]
+        out = self.pos(x)   # x =[bsz, c, d_hidden]
+        out = out.view(out.size(0),-1)  # x =[bsz, c*h*w]
+        out = self.fc1(out)
+        out = self.net(out)
+        out = self.fc2(out)
+        return out
+
+class Encoder(nn.Module):
+    def __init__(self, input_c=25, h=1, w=3, dropout=0.5):
+        super(Encoder, self).__init__()
+        self.pos = PositionalEncoding(d_hid=h*w, n_position=30)
+        self.fc1 = nn.Linear(input_c*h*w, 64)
+        
+        self.net = nn.Sequential(            
+            nn.Linear(64,48),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout),
+            nn.Linear(48,32),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout),
+            nn.Linear(32,16),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout),
+            )
+        self.fc2 = nn.Linear(16,1)
 
     def forward(self, x):   # x =[bsz, c, h,w]
         out = self.pos(x)   # x =[bsz, c, d_hidden]

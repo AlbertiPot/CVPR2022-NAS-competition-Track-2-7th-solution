@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
 from dataset import ArchPerfDataset
-from network import Predictor
+from network import AutoEncoder,Encoder
 
 parser = argparse.ArgumentParser(description='PyTorch Estimator Training')
 parser.add_argument('--data_path', type=str, default='./data/', help='dataset path')
@@ -152,10 +152,15 @@ def main(target_type):
                             drop_last=False
                             )
 
-    model = Predictor().cuda()
+    if target_type == 'cplfw_rank':
+        model = Encoder().cuda()
+    else:
+        model = AutoEncoder().cuda()
     
     criterion = nn.MSELoss().cuda()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.num_epochs))
     
     best_ktau = 0
     best_model_weights = copy.deepcopy(model.state_dict())
@@ -163,6 +168,8 @@ def main(target_type):
 
         model.train()
         train_epoch(model, criterion, optimizer, train_loader, eps, args.log_interval)
+
+        scheduler.step()
 
         model.eval()
         epoch_ktau = val_epoch(model, val_loader, eps, args.log_interval)
@@ -208,6 +215,16 @@ if __name__ == '__main__':
         test_data = json.load(f)
     
     for data_type in task_list:
+        if data_type == 'cplfw_rank':
+            args.lr = 0.002
+            args.weight_decay = 6e-4
+            args.batch_size = 32
+        else:
+            args.lr = 0.001
+            args.weight_decay = 6e-4
+            args.batch_size = 16
+        print(args)
+
         print('start to process task {}'.format(data_type))
         
         total_output = main(data_type)
