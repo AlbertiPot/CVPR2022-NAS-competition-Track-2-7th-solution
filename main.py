@@ -1,3 +1,4 @@
+import os
 import torch
 import argparse
 import copy
@@ -10,6 +11,7 @@ import scipy.stats as stats
 
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.tensorboard import SummaryWriter
 
 from dataset import ArchPerfDataset
 from network import AutoEncoder,Encoder
@@ -27,6 +29,7 @@ parser.add_argument('--log_interval', type=int, default=50)
 # parser.add_argument('--target_type', type=str, default='market1501_rank', help='8 target missions')
 parser.add_argument('--num_workers', type=int, default='4')
 parser.add_argument('--save_name', type=str, default='exp1')
+parser.add_argument('--encode_dimension', type=int, default=11)
 
 args = parser.parse_args()
 
@@ -60,7 +63,7 @@ def train_epoch(model, criterion, optimizer, train_loader, epoch, log_interval):
         
         archs, targets = archs.cuda(), targets.cuda()
         optimizer.zero_grad()
-        
+
         outputs = model(archs)
         outputs = outputs.squeeze(1)
 
@@ -80,6 +83,8 @@ def train_epoch(model, criterion, optimizer, train_loader, epoch, log_interval):
 
     if (epoch+1)%log_interval ==0 or epoch ==0:
         print('[Train] Epoch {}: Loss: {:.4f} ktau: {:.4f}'.format(epoch+1, epoch_loss, epoch_ktau))
+
+    return epoch_loss, epoch_ktau
 
 @torch.no_grad()
 def val_epoch(model, val_loader, epoch, log_interval):
@@ -115,15 +120,14 @@ def test(model, test_loader):
 
     return total_output
 
-       
 
-def main(target_type):
+def main(target_type, tb_writer):
 
     torch.cuda.set_device(args.gpu)
     set_seed(args.seed)
 
-    train_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=True)
-    test_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=False)
+    train_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=True, encode_dimension=args.encode_dimension)
+    test_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=False, encode_dimension=args.encode_dimension)
 
     indices = list(range(len(train_data)))
     split = int(np.floor(args.train_ratio*len(train_data)))
@@ -160,19 +164,24 @@ def main(target_type):
     criterion = nn.MSELoss().cuda()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.num_epochs))
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.num_epochs))
     
     best_ktau = 0
     best_model_weights = copy.deepcopy(model.state_dict())
     for eps in range(args.num_epochs):
 
+        flag = '{}_train'.format(target_type)
         model.train()
-        train_epoch(model, criterion, optimizer, train_loader, eps, args.log_interval)
+        train_epoch_loss, train_epoch_ktau = train_epoch(model, criterion, optimizer, train_loader, eps, args.log_interval)
+        tb_writer.add_scalar('{}/loss'.format(flag), train_epoch_loss, eps)
+        tb_writer.add_scalar('{}/ktau'.format(flag), train_epoch_ktau, eps)
+        
+        # scheduler.step()
 
-        scheduler.step()
-
+        flag = '{}_validate'.format(target_type)
         model.eval()
         epoch_ktau = val_epoch(model, val_loader, eps, args.log_interval)
+        tb_writer.add_scalar('{}/ktau'.format(flag), epoch_ktau, eps)
         
         if epoch_ktau > best_ktau:
                 best_ktau = epoch_ktau
@@ -200,18 +209,20 @@ def norm_list(scores):
 
 
 if __name__ == '__main__':
-    
-    task_list = ["cplfw_rank", 
-                "market1501_rank", 
-                "dukemtmc_rank",
-                "msmt17_rank",
-                "veri_rank",
-                "vehicleid_rank",
-                "veriwild_rank",
-                "sop_rank"]
-    # task_list = ["cplfw_rank"]
 
-    with open('./data/CVPR_2022_NAS_Track2_test.json', 'r') as f:
+    tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
+    
+    # task_list = ["cplfw_rank", 
+    #             "market1501_rank", 
+    #             "dukemtmc_rank",
+    #             "msmt17_rank",
+    #             "veri_rank",
+    #             "vehicleid_rank",
+    #             "veriwild_rank",
+    #             "sop_rank"]
+    task_list = ["cplfw_rank"]
+
+    with open('./train_Track2_submitA_seed0_mix_newencode_allae.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
@@ -227,7 +238,7 @@ if __name__ == '__main__':
 
         print('start to process task {}'.format(data_type))
         
-        total_output = main(data_type)
+        total_output = main(data_type, tb_writer)
         total_output = norm_list(np.array(total_output))
 
         for i, key in enumerate(test_data.keys()):

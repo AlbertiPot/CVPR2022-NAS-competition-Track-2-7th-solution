@@ -22,15 +22,14 @@ class PositionalEncoding(nn.Module):
 
         return torch.FloatTensor(sinusoid_table).unsqueeze(0)                                       # (1,200,512)
 
-    def forward(self, x):   # x =[16, 25, 1, 3]  → x = [bsz, c, d_hidd]
-        x = x.squeeze(2)
+    def forward(self, x):   # x =[16, 37, 10] [bsz, c, d_hidd]
         return x + self.pos_table[:, :x.size(1)].clone().detach()                                   # 将pos_table中存储的位置参数复制一份，与输入相加。detach方法将位置编码从当前计算图中剥离，因此将不会跟踪梯度
 
 class AutoEncoder(nn.Module):
-    def __init__(self, input_c=25, h=1, w=3, dropout=0.5):
+    def __init__(self, input_c=37, l=10, dropout=0.5):
         super(AutoEncoder, self).__init__()
-        self.pos = PositionalEncoding(d_hid=h*w, n_position=30)
-        self.fc1 = nn.Linear(input_c*h*w, 64)
+        self.pos = PositionalEncoding(d_hid=l, n_position=40)
+        self.fc1 = nn.Linear(input_c*l, 64)
         
         self.net = nn.Sequential(            
             nn.Linear(64,32),
@@ -45,19 +44,19 @@ class AutoEncoder(nn.Module):
             )
         self.fc2 = nn.Linear(32,1)
 
-    def forward(self, x):   # x =[bsz, c, h,w]
+    def forward(self, x):   # x =[bsz, c, l]
         out = self.pos(x)   # x =[bsz, c, d_hidden]
-        out = out.view(out.size(0),-1)  # x =[bsz, c*h*w]
+        out = out.view(out.size(0),-1)  # x =[bsz, c*l]
         out = self.fc1(out)
         out = self.net(out)
         out = self.fc2(out)
         return out
 
 class Encoder(nn.Module):
-    def __init__(self, input_c=25, h=1, w=3, dropout=0.5):
+    def __init__(self, input_c=37, l=10, dropout=0.5):
         super(Encoder, self).__init__()
-        self.pos = PositionalEncoding(d_hid=h*w, n_position=30)
-        self.fc1 = nn.Linear(input_c*h*w, 64)
+        self.pos = PositionalEncoding(d_hid=l, n_position=40)
+        self.fc1 = nn.Linear(input_c*l, 64)
         
         self.net = nn.Sequential(            
             nn.Linear(64,48),
@@ -72,7 +71,7 @@ class Encoder(nn.Module):
             )
         self.fc2 = nn.Linear(16,1)
 
-    def forward(self, x):   # x =[bsz, c, h,w]
+    def forward(self, x):   # x =[bsz, c, l]
         out = self.pos(x)   # x =[bsz, c, d_hidden]
         out = out.view(out.size(0),-1)  # x =[bsz, c*h*w]
         out = self.fc1(out)

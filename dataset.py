@@ -3,30 +3,59 @@ import json
 import numpy as np
 from torch.utils.data import Dataset
 
-def convert_arch(arch):
-        arch_str = list(arch)
+# def convert_arch(arch):
+#         arch_str = list(arch)
         
-        for i in range(0,12):
-            del arch_str[-1-2*i]
+#         for i in range(0,12):
+#             del arch_str[-1-2*i]
         
-        decode_arch = [[]]        
-        for elm in arch_str:
-            if elm == 'j' or elm =='1':
-                decode_arch[0].append([1,0,0])
-            elif elm == 'k' or elm =='2':
-                decode_arch[0].append([0,1,0])
-            elif elm == 'l' or elm =='3':
-                decode_arch[0].append([0,0,1])
-            elif elm=='0':
-                decode_arch[0].append([0,0,0])
+#         decode_arch = [[]]        
+#         for elm in arch_str:
+#             if elm == 'j' or elm =='1':
+#                 decode_arch[0].append([1,0,0])
+#             elif elm == 'k' or elm =='2':
+#                 decode_arch[0].append([0,1,0])
+#             elif elm == 'l' or elm =='3':
+#                 decode_arch[0].append([0,0,1])
+#             elif elm=='0':
+#                 decode_arch[0].append([0,0,0])
         
-        decode_arch = np.array(decode_arch,dtype=np.float32).transpose(1,0,2)
+#         decode_arch = np.array(decode_arch,dtype=np.float32).transpose(1,0,2)
         
-        return decode_arch
+#         return decode_arch
+
+def convert_arch(arch_str, encode_dimension):
+    arch_str = list(arch_str)
+    
+    onehot_as=[None for _ in range(0,37)]
+    
+    
+    for i in range(1,37):
+        if i%3==1:
+            onehot_as[i]=2+int(arch_str[i])
+        if i%3==2:
+            onehot_as[i]=5+int(arch_str[i])
+        if i%3==0 and arch_str[i]=='1':
+            onehot_as[i]=9    
+    
+    layer_num=arch_str[0]
+    if layer_num == 'j':
+        onehot_as[0]=0
+        onehot_as[-3*2:]=[10 for _ in range(0,6)]
+    elif layer_num == 'k':
+        onehot_as[0]=1
+        onehot_as[-3*1:]=[10 for _ in range(0,3)]
+    elif layer_num == 'l':
+        onehot_as[0]=2
+
+    decode_arch=np.eye(encode_dimension,10)[onehot_as]
+    decode_arch = np.array(decode_arch,dtype=np.float32)
+    return(decode_arch)  # list (37, 10)
 
 class ArchPerfDataset(Dataset):
-    def __init__(self, root, target_type, train=True):
+    def __init__(self, root, target_type, train=True, encode_dimension=11):
         self.train = train
+        self.encode_dimension = encode_dimension
 
         assert target_type in ["cplfw_rank", 
                                 "market1501_rank", 
@@ -66,7 +95,7 @@ class ArchPerfDataset(Dataset):
                 self.targets.append(self.data[k][self.target_type])
     
     def __getitem__(self, index: int):
-        arch = convert_arch(self.archs[index])
+        arch = convert_arch(self.archs[index], self.encode_dimension)
         
         if self.train:
             target = self.targets[index]
