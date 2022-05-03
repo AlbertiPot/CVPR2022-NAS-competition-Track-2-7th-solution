@@ -156,17 +156,18 @@ def main(target_type, tb_writer):
                             drop_last=False
                             )
 
-    if target_type == 'cplfw_rank':
-        model = Encoder().cuda()
-    else:
-        model = AutoEncoder().cuda()
+    # if target_type == 'cplfw_rank':
+    #     model = Encoder().cuda()
+    # else:
+    model = AutoEncoder().cuda()
     
     criterion = nn.MSELoss().cuda()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    
-    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.num_epochs))
+    if target_type == 'vehicleid_rank':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.num_epochs))
     
     best_ktau = 0
+    best_epoch = 0
     best_model_weights = copy.deepcopy(model.state_dict())
     for eps in range(args.num_epochs):
 
@@ -176,7 +177,8 @@ def main(target_type, tb_writer):
         tb_writer.add_scalar('{}/loss'.format(flag), train_epoch_loss, eps)
         tb_writer.add_scalar('{}/ktau'.format(flag), train_epoch_ktau, eps)
         
-        # scheduler.step()
+        if scheduler:
+            scheduler.step()
 
         flag = '{}_validate'.format(target_type)
         model.eval()
@@ -185,10 +187,11 @@ def main(target_type, tb_writer):
         
         if epoch_ktau > best_ktau:
                 best_ktau = epoch_ktau
-                torch.save(model.state_dict(), './results/{}_seed{}_{}.pth'.format(target_type, args.seed, args.save_name))
+                best_epoch = eps
+                # torch.save(model.state_dict(), './results/{}_seed{}_{}.pth'.format(target_type, args.seed, args.save_name))
                 best_model_weights = copy.deepcopy(model.state_dict())
 
-    print('Best train KTau: {:4f} on task {}'.format(best_ktau, target_type))
+    print('Best train KTau: {:4f}@epoch {} on task {}'.format(best_ktau, best_epoch, target_type))
 
     model.load_state_dict(best_model_weights)
 
@@ -210,8 +213,6 @@ def norm_list(scores):
 
 if __name__ == '__main__':
 
-    tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
-    
     # task_list = ["cplfw_rank", 
     #             "market1501_rank", 
     #             "dukemtmc_rank",
@@ -220,16 +221,25 @@ if __name__ == '__main__':
     #             "vehicleid_rank",
     #             "veriwild_rank",
     #             "sop_rank"]
-    task_list = ["cplfw_rank"]
+    
+    task_list = ["vehicleid_rank"]
 
-    with open('./train_Track2_submitA_seed0_mix_newencode_allae.json', 'r') as f:
+    tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
+    
+    with open('./ae_cplfwok.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
         if data_type == 'cplfw_rank':
-            args.lr = 0.002
+            args.lr = 0.001
             args.weight_decay = 6e-4
-            args.batch_size = 32
+            args.batch_size = 16
+            args.train_ratio = 0.7
+        elif data_type == 'vehicleid_rank':
+            args.lr = 0.001
+            args.weight_decay = 6e-4
+            args.batch_size = 8
+            args.train_ratio = 0.8
         else:
             args.lr = 0.001
             args.weight_decay = 6e-4
@@ -245,6 +255,6 @@ if __name__ == '__main__':
             test_data[key][data_type] = int(total_output[i])
         
     print('Ready to save results!')
-    with open('./train_Track2_submitA_seed{}_{}.json'.format(args.seed,args.save_name), 'w') as f:
+    with open('./Track2_submitA_seed{}_{}.json'.format(args.seed,args.save_name), 'w') as f:
         json.dump(test_data, f)
         

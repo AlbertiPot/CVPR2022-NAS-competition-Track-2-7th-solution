@@ -1,10 +1,7 @@
 # train
 CUDA_VISIBLE_DEVICES=0 python main.py \
 --seed 0 \
---lr 0.001 \
---weight_decay 6e-4 \
---batch_size 16 \
---save_name 'mix_aenopos'
+--save_name 'ae_cplfwok_r8_bsz8_cos'
 
 # search
 # CUDA_VISIBLE_DEVICES=1 python test.py \
