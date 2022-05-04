@@ -30,6 +30,7 @@ parser.add_argument('--log_interval', type=int, default=50)
 parser.add_argument('--num_workers', type=int, default='4')
 parser.add_argument('--save_name', type=str, default='exp1')
 parser.add_argument('--encode_dimension', type=int, default=11)
+parser.add_argument('--dropout_ratio', type=float, default=0.5)
 
 args = parser.parse_args()
 
@@ -159,10 +160,11 @@ def main(target_type, tb_writer):
     # if target_type == 'cplfw_rank':
     #     model = Encoder().cuda()
     # else:
-    model = AutoEncoder().cuda()
+    model = AutoEncoder(dropout=args.dropout_ratio).cuda()
     
     criterion = nn.MSELoss().cuda()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scheduler =None
     if target_type == 'vehicleid_rank':
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.num_epochs))
     
@@ -222,24 +224,28 @@ if __name__ == '__main__':
     #             "veriwild_rank",
     #             "sop_rank"]
     
-    task_list = ["vehicleid_rank"]
+    task_list = ["cplfw_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
-    with open('./ae_cplfwok.json', 'r') as f:
+    with open('./ae_vehicleidok.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
         if data_type == 'cplfw_rank':
             args.lr = 0.001
             args.weight_decay = 6e-4
-            args.batch_size = 16
+            args.batch_size = 8
             args.train_ratio = 0.7
+            args.seed = 4
+            args.dropout_ratio = 0.4
         elif data_type == 'vehicleid_rank':
             args.lr = 0.001
             args.weight_decay = 6e-4
             args.batch_size = 8
             args.train_ratio = 0.8
+            args.seed = 4
+            args.dropout_ratio = 0.4
         else:
             args.lr = 0.001
             args.weight_decay = 6e-4
