@@ -1,6 +1,6 @@
 # train
-CUDA_VISIBLE_DEVICES=1 python main.py \
---save_name 'vechiid_bsz8_dp4_r6_seed4'
+CUDA_VISIBLE_DEVICES=5 python main.py \
+--save_name 'duke_lr5e4_ed6_bsz32_r8_seed1_dp5_cos'
 
 # search
 # CUDA_VISIBLE_DEVICES=1 python test.py \
