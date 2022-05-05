@@ -31,7 +31,8 @@ parser.add_argument('--num_workers', type=int, default='4')
 parser.add_argument('--save_name', type=str, default='exp1')
 parser.add_argument('--encode_dimension', type=int, default=11)
 parser.add_argument('--dropout_ratio', type=float, default=0.5)
-parser.add_argument('--cos', action='store_true', default=False) 
+parser.add_argument('--cos', action='store_true', default=False)
+parser.add_argument('--val_interval', type=int, default=1)
 
 args = parser.parse_args()
 
@@ -177,20 +178,21 @@ def main(target_type, tb_writer):
         flag = '{}_train'.format(target_type)
         model.train()
         train_epoch_loss, train_epoch_ktau = train_epoch(model, criterion, optimizer, train_loader, eps, args.log_interval)
-        tb_writer.add_scalar('{}/loss'.format(flag), train_epoch_loss, eps)
-        tb_writer.add_scalar('{}/ktau'.format(flag), train_epoch_ktau, eps)
+        tb_writer.add_scalar('{}/loss'.format(flag), train_epoch_loss, eps+1)
+        tb_writer.add_scalar('{}/ktau'.format(flag), train_epoch_ktau, eps+1)
         
         if scheduler:
             scheduler.step()
 
-        flag = '{}_validate'.format(target_type)
-        model.eval()
-        epoch_ktau = val_epoch(model, val_loader, eps, args.log_interval)
-        tb_writer.add_scalar('{}/ktau'.format(flag), epoch_ktau, eps)
+        if (eps+1)%args.val_interval == 0 or eps==0:
+            flag = '{}_validate'.format(target_type)
+            model.eval()
+            epoch_ktau = val_epoch(model, val_loader, eps, args.log_interval)
+            tb_writer.add_scalar('{}/ktau'.format(flag), epoch_ktau, eps+1)
         
-        if epoch_ktau > best_ktau:
+            if epoch_ktau > best_ktau:
                 best_ktau = epoch_ktau
-                best_epoch = eps
+                best_epoch = eps+1
                 # torch.save(model.state_dict(), './results/{}_seed{}_{}.pth'.format(target_type, args.seed, args.save_name))
                 best_model_weights = copy.deepcopy(model.state_dict())
 
@@ -225,7 +227,7 @@ if __name__ == '__main__':
     #             "veriwild_rank",
     #             "sop_rank"]
     
-    task_list = ["dukemtmc_rank"]
+    task_list = ["cplfw_rank", "veri_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
@@ -235,12 +237,13 @@ if __name__ == '__main__':
     for data_type in task_list:
         if data_type == 'cplfw_rank':
             # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.7, seed=4, dp=0.4
-            args.lr = 0.001
+            args.lr = 1e-3
             args.weight_decay = 6e-4
             args.batch_size = 8
             args.train_ratio = 0.7
             args.seed = 4
             args.dropout_ratio = 0.4
+            args.cos=False
         elif data_type == 'vehicleid_rank':
             # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.8, seed=4, dp=0.4
             args.lr = 0.001
@@ -258,6 +261,14 @@ if __name__ == '__main__':
             args.train_ratio = 0.8
             args.seed=1
             args.dropout_ratio=0.4
+            args.cos=True
+        elif data_type == 'veri_rank':
+            args.lr = 1e-3
+            args.weight_decay = 6e-4
+            args.batch_size = 32
+            args.train_ratio = 0.8
+            args.seed=0
+            args.dropout_ratio=0.5
             args.cos=True
         else:
             args.lr = 0.001
