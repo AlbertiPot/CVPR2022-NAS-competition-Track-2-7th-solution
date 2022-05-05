@@ -251,12 +251,13 @@ if __name__ == '__main__':
             args.dropout_ratio = 0.4
             args.cos=True
         elif data_type == 'dukemtmc_rank':
+            # current best: lr=5e-4, wd=6e-4 bsz=32, ratio=0.8, seed=1, dp=0.4
             args.lr = 5e-4
             args.weight_decay = 6e-4
             args.batch_size = 32
             args.train_ratio = 0.8
             args.seed=1
-            args.dropout_ratio=0.5
+            args.dropout_ratio=0.4
             args.cos=True
         else:
             args.lr = 0.001
