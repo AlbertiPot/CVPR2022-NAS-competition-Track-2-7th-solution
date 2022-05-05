@@ -129,6 +129,8 @@ def main(target_type, tb_writer):
     torch.cuda.set_device(args.gpu)
     set_seed(args.seed)
 
+    print('before dataloader init',torch.randn(2,3))
+
     train_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=True, encode_dimension=args.encode_dimension)
     test_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=False, encode_dimension=args.encode_dimension)
 
@@ -158,7 +160,7 @@ def main(target_type, tb_writer):
                             num_workers=args.num_workers,
                             drop_last=False
                             )
-
+    print('after dataloader init',torch.randn(2,3))
     # if target_type == 'cplfw_rank':
     #     model = Encoder().cuda()
     # else:
@@ -227,16 +229,16 @@ if __name__ == '__main__':
     #             "veriwild_rank",
     #             "sop_rank"]
     
-    task_list = ["cplfw_rank","veri_rank","vehicleid_rank","dukemtmc_rank"]
+    task_list = ["sop_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
-    with open('./ae_vehicleidok.json', 'r') as f:
+    with open('./fixed.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
         if data_type == 'cplfw_rank':
-            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.7, seed=4, dp=0.4
+            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.7, seed=4, dp=0.4, cos=False, val_interva=5
             args.lr = 1e-3
             args.weight_decay = 6e-4
             args.batch_size = 8
@@ -244,7 +246,7 @@ if __name__ == '__main__':
             args.seed = 4
             args.dropout_ratio = 0.4
             args.cos=False
-            args.val_interval = 10
+            args.val_interval = 5
         elif data_type == 'vehicleid_rank':
             # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.8, seed=4, dp=0.4, cos=True, val_inter=1
             args.lr = 0.001
@@ -275,6 +277,15 @@ if __name__ == '__main__':
             args.dropout_ratio=0.5
             args.cos=True
             args.val_interval = 5
+        elif data_type == 'sop_rank':
+            args.lr = 0.001
+            args.weight_decay = 6e-4
+            args.batch_size = 50
+            args.train_ratio = 0.8
+            args.seed=4
+            args.dropout_ratio=0.5
+            args.cos=True
+            args.val_interval = 1
         else:
             args.lr = 0.001
             args.weight_decay = 6e-4
