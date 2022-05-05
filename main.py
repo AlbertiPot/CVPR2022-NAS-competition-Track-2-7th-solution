@@ -224,7 +224,7 @@ if __name__ == '__main__':
     #             "veriwild_rank",
     #             "sop_rank"]
     
-    task_list = ["cplfw_rank"]
+    task_list = ["vehicleid_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
@@ -233,6 +233,7 @@ if __name__ == '__main__':
     
     for data_type in task_list:
         if data_type == 'cplfw_rank':
+            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.7, seed=4, dp=0.4
             args.lr = 0.001
             args.weight_decay = 6e-4
             args.batch_size = 8
@@ -240,6 +241,7 @@ if __name__ == '__main__':
             args.seed = 4
             args.dropout_ratio = 0.4
         elif data_type == 'vehicleid_rank':
+            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.8, seed=4, dp=0.4
             args.lr = 0.001
             args.weight_decay = 6e-4
             args.batch_size = 8
