@@ -25,7 +25,7 @@ parser.add_argument('--num_epochs', type=int, default=400)
 parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--seed', type=int, default=1, help='random seed')
 parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
-parser.add_argument('--log_interval', type=int, default=50)
+parser.add_argument('--log_interval', type=int, default=100)
 # parser.add_argument('--target_type', type=str, default='market1501_rank', help='8 target missions')
 parser.add_argument('--num_workers', type=int, default='4')
 parser.add_argument('--save_name', type=str, default='exp1')
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     #             "veriwild_rank",
     #             "sop_rank"]
     
-    task_list = ["cplfw_rank", "veri_rank"]
+    task_list = ["cplfw_rank","veri_rank","vehicleid_rank","dukemtmc_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
@@ -244,8 +244,9 @@ if __name__ == '__main__':
             args.seed = 4
             args.dropout_ratio = 0.4
             args.cos=False
+            args.val_interval = 10
         elif data_type == 'vehicleid_rank':
-            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.8, seed=4, dp=0.4
+            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.8, seed=4, dp=0.4, cos=True, val_inter=1
             args.lr = 0.001
             args.weight_decay = 6e-4
             args.batch_size = 8
@@ -253,8 +254,9 @@ if __name__ == '__main__':
             args.seed = 4
             args.dropout_ratio = 0.4
             args.cos=True
+            args.val_interval = 1
         elif data_type == 'dukemtmc_rank':
-            # current best: lr=5e-4, wd=6e-4 bsz=32, ratio=0.8, seed=1, dp=0.4
+            # current best: lr=5e-4, wd=6e-4 bsz=32, ratio=0.8, seed=1, dp=0.4, cos=True, val_interval=5
             args.lr = 5e-4
             args.weight_decay = 6e-4
             args.batch_size = 32
@@ -262,7 +264,9 @@ if __name__ == '__main__':
             args.seed=1
             args.dropout_ratio=0.4
             args.cos=True
+            args.val_interval = 5
         elif data_type == 'veri_rank':
+            # current best: lr=1e-3, wd=6e-4 bsz=32, ratio=0.8, seed=0, dp=0.5, cos=True, val_interval=5
             args.lr = 1e-3
             args.weight_decay = 6e-4
             args.batch_size = 32
@@ -270,6 +274,7 @@ if __name__ == '__main__':
             args.seed=0
             args.dropout_ratio=0.5
             args.cos=True
+            args.val_interval = 5
         else:
             args.lr = 0.001
             args.weight_decay = 6e-4
