@@ -1,17 +1,12 @@
-import os
 import torch
 import argparse
-import copy
 import json
-import torch.nn as nn
-import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import numpy as np
 import scipy.stats as stats
 
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.tensorboard import SummaryWriter
 
 from dataset import ArchPerfDataset
 from network import AutoEncoder
@@ -150,13 +145,16 @@ if __name__ == '__main__':
             args.seed = 4
             args.dropout_ratio = 0.4
             args.model_pth = 'cplfw_rank_epoch_inteval5_model.pth'
-            args.model_path_index = -2
+            args.model_path_index = -6
             args.save_name = 'cplfw_{}'.format(args.model_path_index)
         else:
             args.batch_size = 16
             args.train_ratio = 0.9
             args.seed=1
             args.dropout_ratio=0.5
+            args.model_pth = 'cplfw_rank_epoch_inteval5_model.pth'
+            args.model_path_index = -1
+            args.save_name = '{}_{}'.format(data_type, args.model_path_index)
         print(args)
         
         print('start to process task {}'.format(data_type))
