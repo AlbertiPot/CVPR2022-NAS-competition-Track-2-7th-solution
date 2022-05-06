@@ -1,24 +1,33 @@
+import os
 import torch
 import argparse
+import copy
 import json
+import torch.nn as nn
+import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import numpy as np
 import scipy.stats as stats
 
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.tensorboard import SummaryWriter
 
 from dataset import ArchPerfDataset
-from network import Predictor
+from network import AutoEncoder
 
-parser = argparse.ArgumentParser(description='PyTorch Estimator Training')
+parser = argparse.ArgumentParser(description='PyTorch Estimator Evaluation')
 parser.add_argument('--data_path', type=str, default='./data/', help='dataset path')
 parser.add_argument('--train_ratio', type=float, default=0.9, help='ratio of train data')
 parser.add_argument('--batch_size', type=int, default=16)
-parser.add_argument('--seed', type=int, default=2, help='random seed')
+parser.add_argument('--seed', type=int, default=1, help='random seed')
 parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
 parser.add_argument('--num_workers', type=int, default='4')
 parser.add_argument('--save_name', type=str, default='exp1')
+parser.add_argument('--encode_dimension', type=int, default=11)
+parser.add_argument('--dropout_ratio', type=float, default=0.5)
+parser.add_argument('--model_pth', type=str, default='cplfw_rank_epoch_inteval5_model.pth')
+parser.add_argument('--model_path_index', type=int, default=-1)
 
 args = parser.parse_args()
 
@@ -65,8 +74,10 @@ def main(target_type):
     torch.cuda.set_device(args.gpu)
     set_seed(args.seed)
 
-    train_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=True)
-    test_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=False)
+    print('before dataloader init',torch.randn(2,3))
+
+    train_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=True, encode_dimension=args.encode_dimension)
+    test_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=False, encode_dimension=args.encode_dimension)
 
     indices = list(range(len(train_data)))
     split = int(np.floor(args.train_ratio*len(train_data)))
@@ -80,15 +91,24 @@ def main(target_type):
                             )
 
     test_loader = DataLoader(test_data, 
-                                batch_size=args.batch_size,
-                                pin_memory=True,
-                                shuffle=False,
-                                num_workers=args.num_workers,
-                                drop_last=False
-                                )
+                            batch_size=args.batch_size,
+                            pin_memory=True,
+                            shuffle=False,
+                            num_workers=args.num_workers,
+                            drop_last=False
+                            )
+    print('after dataloader init',torch.randn(2,3))
+    
+    all_model_weights = torch.load('./results/{}'.format(args.model_pth))
+    all_model_index = sorted(all_model_weights.keys())
+    
+    model_key = all_model_index[args.model_path_index]
+    print(all_model_index)
 
-    model = Predictor().cuda()
-    model.load_state_dict(torch.load('./results/{}_seed{}_{}.pth'.format(target_type, args.seed, args.save_name)))
+    model = AutoEncoder(dropout=args.dropout_ratio).cuda()
+    
+    print("using model with val acc {}".format(model_key))
+    model.load_state_dict(all_model_weights[model_key])
 
     model.eval()
     val_epoch(model, val_loader)
@@ -108,22 +128,37 @@ def norm_list(scores):
     return rank_number
 
 if __name__ == '__main__':
-    print(args)
+
+    # task_list = ["cplfw_rank", 
+    #             "market1501_rank", 
+    #             "dukemtmc_rank",
+    #             "msmt17_rank",
+    #             "veri_rank",
+    #             "vehicleid_rank",
+    #             "veriwild_rank",
+    #             "sop_rank"]
+    task_list = ["cplfw_rank"]
     
-    task_list = ["cplfw_rank", 
-                "market1501_rank", 
-                "dukemtmc_rank",
-                "msmt17_rank",
-                "veri_rank",
-                "vehicleid_rank",
-                "veriwild_rank",
-                "sop_rank"]
-    # task_list = ["cplfw_rank"]
-    
-    with open('./data/CVPR_2022_NAS_Track2_test.json', 'r') as f:
+    with open('./fixed.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
+
+        if data_type == 'cplfw_rank':
+            args.batch_size = 8
+            args.train_ratio = 0.7
+            args.seed = 4
+            args.dropout_ratio = 0.4
+            args.model_pth = 'cplfw_rank_epoch_inteval5_model.pth'
+            args.model_path_index = -2
+            args.save_name = 'cplfw_{}'.format(args.model_path_index)
+        else:
+            args.batch_size = 16
+            args.train_ratio = 0.9
+            args.seed=1
+            args.dropout_ratio=0.5
+        print(args)
+        
         print('start to process task {}'.format(data_type))
         
         total_output = main(data_type)
@@ -133,7 +168,7 @@ if __name__ == '__main__':
             test_data[key][data_type] = int(total_output[i])
         
     print('Ready to save results!')
-    with open('./eval_Track2_submitA_seed{}_{}.json'.format(args.seed,args.save_name), 'w') as f:
+    with open('./eval_Track2_submitA_{}.json'.format(args.save_name), 'w') as f:
         json.dump(test_data, f)
 
 

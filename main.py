@@ -175,6 +175,7 @@ def main(target_type, tb_writer):
     best_ktau = 0
     best_epoch = 0
     best_model_weights = copy.deepcopy(model.state_dict())
+    all_model_weights = {}
     for eps in range(args.num_epochs):
 
         flag = '{}_train'.format(target_type)
@@ -192,11 +193,15 @@ def main(target_type, tb_writer):
             epoch_ktau = val_epoch(model, val_loader, eps, args.log_interval)
             tb_writer.add_scalar('{}/ktau'.format(flag), epoch_ktau, eps+1)
         
+            # save best val epoch model for test
             if epoch_ktau > best_ktau:
                 best_ktau = epoch_ktau
                 best_epoch = eps+1
-                # torch.save(model.state_dict(), './results/{}_seed{}_{}.pth'.format(target_type, args.seed, args.save_name))
                 best_model_weights = copy.deepcopy(model.state_dict())
+
+            # save every model
+            all_model_weights[epoch_ktau] = copy.deepcopy(model.state_dict())
+            torch.save(all_model_weights, './results/{}_epoch_inteval{}_model.pth'.format(target_type, args.val_interval))
 
     print('Best train KTau: {:4f}@epoch {} on task {}'.format(best_ktau, best_epoch, target_type))
 
@@ -229,7 +234,7 @@ if __name__ == '__main__':
     #             "veriwild_rank",
     #             "sop_rank"]
     
-    task_list = ["sop_rank"]
+    task_list = ["cplfw_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
@@ -278,6 +283,7 @@ if __name__ == '__main__':
             args.cos=True
             args.val_interval = 5
         elif data_type == 'sop_rank':
+            # current best: lr=1e-3, wd=6e-4 bsz=50, ratio=0.8, seed=4, dp=0.5, cos=True, val_interval=1
             args.lr = 0.001
             args.weight_decay = 6e-4
             args.batch_size = 50
@@ -290,6 +296,11 @@ if __name__ == '__main__':
             args.lr = 0.001
             args.weight_decay = 6e-4
             args.batch_size = 16
+            args.train_ratio = 0.9
+            args.seed=1
+            args.dropout_ratio=0.5
+            args.cos=False
+            args.val_interval = 1
         print(args)
 
         print('start to process task {}'.format(data_type))
