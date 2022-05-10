@@ -68,6 +68,9 @@ def main(target_type):
     
     torch.cuda.set_device(args.gpu)
     set_seed(args.seed)
+    
+    g_cpu = torch.Generator()
+    g_cpu.manual_seed(args.seed)
 
     print('before dataloader init',torch.randn(2,3))
 
@@ -79,7 +82,7 @@ def main(target_type):
     
     val_loader = DataLoader(train_data, 
                             batch_size=args.batch_size,
-                            sampler=SubsetRandomSampler(indices[split:]),
+                            sampler=SubsetRandomSampler(indices[split:], generator=g_cpu),
                             pin_memory=True,
                             num_workers=args.num_workers,
                             drop_last=True
@@ -132,29 +135,41 @@ if __name__ == '__main__':
     #             "vehicleid_rank",
     #             "veriwild_rank",
     #             "sop_rank"]
-    task_list = ["cplfw_rank"]
+    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","msmt17_rank"]
     
-    with open('./fixed.json', 'r') as f:
+    with open('./fixed3_0508_7902525.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
 
         if data_type == 'cplfw_rank':
             args.batch_size = 8
-            args.train_ratio = 0.7
-            args.seed = 4
+            args.train_ratio = 0.8
+            args.seed = 1
             args.dropout_ratio = 0.4
-            args.model_pth = 'cplfw_rank_epoch_inteval5_model.pth'
-            args.model_path_index = -6
-            args.save_name = 'cplfw_{}'.format(args.model_path_index)
+            args.model_pth = 'cplfw_rank_epoch_inteval3.pth'
+            # args.model_path_index = -2
+        elif data_type == 'vehicleid_rank':
+            args.batch_size = 25
+            args.train_ratio = 0.8
+            args.seed = 1
+            args.dropout_ratio = 0.4
+            args.model_pth = 'vehicleid_rank_epoch_inteval3.pth'
+            # args.model_path_index = -2
+        elif data_type == 'dukemtmc_rank':
+            args.batch_size = 25
+            args.train_ratio = 0.9
+            args.seed = 0
+            args.dropout_ratio = 0.4
+            args.model_pth = 'dukemtmc_rank_epoch_inteval1.pth'
+            # args.model_path_index = -3
         else:
-            args.batch_size = 16
+            args.batch_size = 25
             args.train_ratio = 0.9
             args.seed=1
             args.dropout_ratio=0.5
-            args.model_pth = 'cplfw_rank_epoch_inteval5_model.pth'
-            args.model_path_index = -1
-            args.save_name = '{}_{}'.format(data_type, args.model_path_index)
+            args.model_pth = 'market1501_rank_epoch_inteval3.pth'
+        args.model_path_index = -7
         print(args)
         
         print('start to process task {}'.format(data_type))
@@ -166,7 +181,7 @@ if __name__ == '__main__':
             test_data[key][data_type] = int(total_output[i])
         
     print('Ready to save results!')
-    with open('./eval_Track2_submitA_{}.json'.format(args.save_name), 'w') as f:
+    with open('./eval_{}.json'.format(args.save_name), 'w') as f:
         json.dump(test_data, f)
 
 

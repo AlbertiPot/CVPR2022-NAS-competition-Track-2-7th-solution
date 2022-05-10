@@ -129,6 +129,9 @@ def main(target_type, tb_writer):
     torch.cuda.set_device(args.gpu)
     set_seed(args.seed)
 
+    g_cpu = torch.Generator()
+    g_cpu.manual_seed(args.seed)
+
     print('before dataloader init',torch.randn(2,3))
 
     train_data = ArchPerfDataset(root=args.data_path, target_type=target_type, train=True, encode_dimension=args.encode_dimension)
@@ -139,7 +142,7 @@ def main(target_type, tb_writer):
 
     train_loader = DataLoader(train_data, 
                             batch_size=args.batch_size,
-                            sampler=SubsetRandomSampler(indices[:split]),
+                            sampler=SubsetRandomSampler(indices[:split],generator=g_cpu),
                             pin_memory=True,
                             num_workers=args.num_workers,
                             drop_last=True
@@ -147,7 +150,7 @@ def main(target_type, tb_writer):
     
     val_loader = DataLoader(train_data, 
                             batch_size=args.batch_size,
-                            sampler=SubsetRandomSampler(indices[split:]),
+                            sampler=SubsetRandomSampler(indices[split:],generator=g_cpu),
                             pin_memory=True,
                             num_workers=args.num_workers,
                             drop_last=True
@@ -201,7 +204,7 @@ def main(target_type, tb_writer):
 
             # save every model
             all_model_weights[epoch_ktau] = copy.deepcopy(model.state_dict())
-            torch.save(all_model_weights, './results/{}_epoch_inteval{}_model.pth'.format(target_type, args.val_interval))
+    torch.save(all_model_weights, './results/{}_epoch_inteval{}.pth'.format(target_type, args.val_interval))
 
     print('Best train KTau: {:4f}@epoch {} on task {}'.format(best_ktau, best_epoch, target_type))
 
@@ -234,7 +237,7 @@ if __name__ == '__main__':
     #             "veriwild_rank",
     #             "sop_rank"]
     
-    task_list = ["cplfw_rank"]
+    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","market1501_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
@@ -247,60 +250,40 @@ if __name__ == '__main__':
             args.lr = 1e-3
             args.weight_decay = 6e-4
             args.batch_size = 8
-            args.train_ratio = 0.7
-            args.seed = 4
+            args.train_ratio = 0.8
+            args.seed = 1
             args.dropout_ratio = 0.4
             args.cos=False
-            args.val_interval = 5
+            args.val_interval = 3
         elif data_type == 'vehicleid_rank':
             # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.8, seed=4, dp=0.4, cos=True, val_inter=1
             args.lr = 0.001
             args.weight_decay = 6e-4
-            args.batch_size = 8
+            args.batch_size = 25
             args.train_ratio = 0.8
-            args.seed = 4
+            args.seed = 1
             args.dropout_ratio = 0.4
             args.cos=True
-            args.val_interval = 1
+            args.val_interval = 3
         elif data_type == 'dukemtmc_rank':
             # current best: lr=5e-4, wd=6e-4 bsz=32, ratio=0.8, seed=1, dp=0.4, cos=True, val_interval=5
             args.lr = 5e-4
             args.weight_decay = 6e-4
-            args.batch_size = 32
-            args.train_ratio = 0.8
-            args.seed=1
-            args.dropout_ratio=0.4
-            args.cos=True
-            args.val_interval = 5
-        elif data_type == 'veri_rank':
-            # current best: lr=1e-3, wd=6e-4 bsz=32, ratio=0.8, seed=0, dp=0.5, cos=True, val_interval=5
-            args.lr = 1e-3
-            args.weight_decay = 6e-4
-            args.batch_size = 32
-            args.train_ratio = 0.8
+            args.batch_size = 25
+            args.train_ratio = 0.9
             args.seed=0
-            args.dropout_ratio=0.5
-            args.cos=True
-            args.val_interval = 5
-        elif data_type == 'sop_rank':
-            # current best: lr=1e-3, wd=6e-4 bsz=50, ratio=0.8, seed=4, dp=0.5, cos=True, val_interval=1
-            args.lr = 0.001
-            args.weight_decay = 6e-4
-            args.batch_size = 50
-            args.train_ratio = 0.8
-            args.seed=4
-            args.dropout_ratio=0.5
+            args.dropout_ratio=0.4
             args.cos=True
             args.val_interval = 1
         else:
             args.lr = 0.001
             args.weight_decay = 6e-4
-            args.batch_size = 16
+            args.batch_size = 25
             args.train_ratio = 0.9
             args.seed=1
             args.dropout_ratio=0.5
-            args.cos=False
-            args.val_interval = 1
+            args.cos=True
+            args.val_interval = 3
         print(args)
 
         print('start to process task {}'.format(data_type))
