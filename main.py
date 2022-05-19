@@ -14,7 +14,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.tensorboard import SummaryWriter
 
 from dataset import ArchPerfDataset
-from network import AutoEncoder,Encoder
+from network import AutoEncoder
 
 parser = argparse.ArgumentParser(description='PyTorch Estimator Training')
 parser.add_argument('--data_path', type=str, default='./data/', help='dataset path')
@@ -164,9 +164,7 @@ def main(target_type, tb_writer):
                             drop_last=False
                             )
     print('after dataloader init',torch.randn(2,3))
-    # if target_type == 'cplfw_rank':
-    #     model = Encoder().cuda()
-    # else:
+    
     model = AutoEncoder(dropout=args.dropout_ratio).cuda()
     
     criterion = nn.MSELoss().cuda()
@@ -208,12 +206,12 @@ def main(target_type, tb_writer):
 
     print('Best train KTau: {:4f}@epoch {} on task {}'.format(best_ktau, best_epoch, target_type))
 
-    model.load_state_dict(best_model_weights)
+    # model.load_state_dict(best_model_weights)
 
-    model.eval()
-    total_output = test(model, test_loader)
+    # model.eval()
+    # total_output = test(model, test_loader)
 
-    return total_output
+    # return total_output
 
 def norm_list(scores):
     scores_ls_sort=scores.tolist()
@@ -241,60 +239,61 @@ if __name__ == '__main__':
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
-    with open('./fixed.json', 'r') as f:
+    with open('./data/CVPR_2022_NAS_Track2_test.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
         if data_type == 'cplfw_rank':
-            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.7, seed=4, dp=0.4, cos=False, val_interva=5
+            # best: lr=1e-3, wd=6e-4 bsz=8, ratio=0.7, seed=4, dp=0.4, cos=False, val_interva=1
             args.lr = 1e-3
             args.weight_decay = 6e-4
             args.batch_size = 8
-            args.train_ratio = 0.8
-            args.seed = 1
+            args.train_ratio = 0.7
+            args.seed = 4
             args.dropout_ratio = 0.4
             args.cos=False
-            args.val_interval = 3
+            args.val_interval = 1
         elif data_type == 'vehicleid_rank':
-            # current best: lr=0.001, wd=6e-4 bsz=8, ratio=0.8, seed=4, dp=0.4, cos=True, val_inter=1
-            args.lr = 0.001
+            # current best: lr=1e-3, wd=6e-4 bsz=25, ratio=0.9, seed=4, dp=0.4, cos=True, val_inter=5
+            args.lr = 1e-3
             args.weight_decay = 6e-4
             args.batch_size = 25
-            args.train_ratio = 0.8
-            args.seed = 1
+            args.train_ratio = 0.9
+            args.seed = 4
             args.dropout_ratio = 0.4
             args.cos=True
-            args.val_interval = 3
+            args.val_interval = 5
         elif data_type == 'dukemtmc_rank':
-            # current best: lr=5e-4, wd=6e-4 bsz=32, ratio=0.8, seed=1, dp=0.4, cos=True, val_interval=5
+            # current best: lr=5e-4, wd=6e-4 bsz=25, ratio=0.9, seed=4, dp=0.4, cos=True, val_interval=1
             args.lr = 5e-4
             args.weight_decay = 6e-4
             args.batch_size = 25
             args.train_ratio = 0.9
-            args.seed=0
+            args.seed=4
             args.dropout_ratio=0.4
             args.cos=True
             args.val_interval = 1
-        else:
-            args.lr = 0.001
+        elif data_type == 'market1501_rank':
+            args.lr = 1e-3
             args.weight_decay = 6e-4
-            args.batch_size = 25
+            args.batch_size = 32
             args.train_ratio = 0.9
             args.seed=1
             args.dropout_ratio=0.5
-            args.cos=True
-            args.val_interval = 3
+            args.cos=False
+            args.val_interval = 1
         print(args)
 
         print('start to process task {}'.format(data_type))
         
-        total_output = main(data_type, tb_writer)
-        total_output = norm_list(np.array(total_output))
+        main(data_type, tb_writer)
+        # total_output = main(data_type, tb_writer)
+        # total_output = norm_list(np.array(total_output))
 
-        for i, key in enumerate(test_data.keys()):
-            test_data[key][data_type] = int(total_output[i])
+        # for i, key in enumerate(test_data.keys()):
+        #     test_data[key][data_type] = int(total_output[i])
         
-    print('Ready to save results!')
-    with open('./Track2_submitA_seed{}_{}.json'.format(args.seed,args.save_name), 'w') as f:
-        json.dump(test_data, f)
+    # print('Ready to save results!')
+    # with open('./Track2_submitA_{}.json'.format(args.save_name), 'w') as f:
+    #     json.dump(test_data, f)
         

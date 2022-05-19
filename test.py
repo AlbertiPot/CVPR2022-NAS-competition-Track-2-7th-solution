@@ -135,41 +135,41 @@ if __name__ == '__main__':
     #             "vehicleid_rank",
     #             "veriwild_rank",
     #             "sop_rank"]
-    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","msmt17_rank"]
+    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","market1501_rank"]
     
-    with open('./fixed3_0508_7902525.json', 'r') as f:
+    with open('./data/CVPR_2022_NAS_Track2_test.json', 'r') as f:
         test_data = json.load(f)
     
     for data_type in task_list:
 
         if data_type == 'cplfw_rank':
             args.batch_size = 8
-            args.train_ratio = 0.8
-            args.seed = 1
+            args.train_ratio = 0.7
+            args.seed = 4
             args.dropout_ratio = 0.4
-            args.model_pth = 'cplfw_rank_epoch_inteval3.pth'
-            # args.model_path_index = -2
+            args.model_pth = 'cplfw_final.pth'
+            args.model_path_index = -1
         elif data_type == 'vehicleid_rank':
             args.batch_size = 25
-            args.train_ratio = 0.8
-            args.seed = 1
+            args.train_ratio = 0.9
+            args.seed = 4
             args.dropout_ratio = 0.4
-            args.model_pth = 'vehicleid_rank_epoch_inteval3.pth'
-            # args.model_path_index = -2
+            args.model_pth = 'vehicleid_final.pth'
+            args.model_path_index = -2
         elif data_type == 'dukemtmc_rank':
             args.batch_size = 25
             args.train_ratio = 0.9
-            args.seed = 0
+            args.seed = 4
             args.dropout_ratio = 0.4
-            args.model_pth = 'dukemtmc_rank_epoch_inteval1.pth'
-            # args.model_path_index = -3
-        else:
-            args.batch_size = 25
+            args.model_pth = 'dukemtmc_final.pth'
+            args.model_path_index = -3
+        elif data_type == 'market1501_rank':
+            args.batch_size = 32
             args.train_ratio = 0.9
             args.seed=1
             args.dropout_ratio=0.5
-            args.model_pth = 'market1501_rank_epoch_inteval3.pth'
-        args.model_path_index = -7
+            args.model_pth = 'market1501_final.pth'
+            args.model_path_index = -7
         print(args)
         
         print('start to process task {}'.format(data_type))
@@ -181,7 +181,7 @@ if __name__ == '__main__':
             test_data[key][data_type] = int(total_output[i])
         
     print('Ready to save results!')
-    with open('./eval_{}.json'.format(args.save_name), 'w') as f:
+    with open('./Track2_submitA_{}.json'.format(args.save_name), 'w') as f:
         json.dump(test_data, f)
 
 
