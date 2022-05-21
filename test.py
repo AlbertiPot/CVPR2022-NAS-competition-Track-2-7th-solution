@@ -127,15 +127,7 @@ def norm_list(scores):
 
 if __name__ == '__main__':
 
-    # task_list = ["cplfw_rank", 
-    #             "market1501_rank", 
-    #             "dukemtmc_rank",
-    #             "msmt17_rank",
-    #             "veri_rank",
-    #             "vehicleid_rank",
-    #             "veriwild_rank",
-    #             "sop_rank"]
-    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","market1501_rank"]
+    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","market1501_rank","msmt17_rank","veri_rank","veriwild_rank","sop_rank"]
     
     with open('./data/CVPR_2022_NAS_Track2_test.json', 'r') as f:
         test_data = json.load(f)
@@ -170,6 +162,34 @@ if __name__ == '__main__':
             args.dropout_ratio=0.5
             args.model_pth = 'market1501_final.pth'
             args.model_path_index = -7
+        elif data_type == 'msmt17_rank':
+            args.batch_size = 32
+            args.train_ratio = 0.8
+            args.seed=1
+            args.dropout_ratio=0.4
+            args.model_pth = 'msmt17_final.pth'
+            args.model_path_index = -4
+        elif data_type == 'veri_rank':
+            args.batch_size = 32
+            args.train_ratio = 0.8
+            args.seed=0
+            args.dropout_ratio=0.5
+            args.model_pth = 'veri_final.pth'
+            args.model_path_index = -1
+        elif data_type == 'veriwild_rank':
+            args.batch_size = 32
+            args.train_ratio = 0.8
+            args.seed=3
+            args.dropout_ratio=0.5
+            args.model_pth = 'veriwild_final.pth'
+            args.model_path_index = -43
+        elif data_type == 'sop_rank':
+            args.batch_size = 50
+            args.train_ratio = 0.8
+            args.seed=4
+            args.dropout_ratio=0.5
+            args.model_pth = 'sop_final.pth'
+            args.model_path_index = -4
         print(args)
         
         print('start to process task {}'.format(data_type))

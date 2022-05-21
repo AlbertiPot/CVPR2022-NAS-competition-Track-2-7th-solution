@@ -225,17 +225,8 @@ def norm_list(scores):
 
 
 if __name__ == '__main__':
-
-    # task_list = ["cplfw_rank", 
-    #             "market1501_rank", 
-    #             "dukemtmc_rank",
-    #             "msmt17_rank",
-    #             "veri_rank",
-    #             "vehicleid_rank",
-    #             "veriwild_rank",
-    #             "sop_rank"]
     
-    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","market1501_rank"]
+    task_list = ["cplfw_rank","vehicleid_rank","dukemtmc_rank","market1501_rank","msmt17_rank","veri_rank","veriwild_rank","sop_rank"]
 
     tb_writer = SummaryWriter(os.path.join('./results',args.save_name))
     
@@ -281,6 +272,42 @@ if __name__ == '__main__':
             args.seed=1
             args.dropout_ratio=0.5
             args.cos=False
+            args.val_interval = 1
+        elif data_type == 'msmt17_rank':
+            args.lr = 1e-3
+            args.weight_decay = 6e-4
+            args.batch_size = 32
+            args.train_ratio = 0.8
+            args.seed=1
+            args.dropout_ratio=0.4
+            args.cos=True
+            args.val_interval = 5
+        elif data_type == 'veri_rank':
+            args.lr = 1e-3
+            args.weight_decay = 6e-4
+            args.batch_size = 32
+            args.train_ratio = 0.8
+            args.seed=0
+            args.dropout_ratio=0.5
+            args.cos=True
+            args.val_interval = 5
+        elif data_type == 'veriwild_rank':
+            args.lr = 1e-3
+            args.weight_decay = 6e-4
+            args.batch_size = 32
+            args.train_ratio = 0.8
+            args.seed=3
+            args.dropout_ratio=0.5
+            args.cos=True
+            args.val_interval = 1
+        elif data_type == 'sop_rank':
+            args.lr = 1e-3
+            args.weight_decay = 6e-4
+            args.batch_size = 50
+            args.train_ratio = 0.8
+            args.seed=4
+            args.dropout_ratio=0.5
+            args.cos=True
             args.val_interval = 1
         print(args)
 
